@@ -96,6 +96,20 @@ button.btn:hover{border-color:var(--edge);color:var(--edge)}
 button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
 .status{font-size:12px;color:var(--faint);font-family:"IBM Plex Mono",monospace;min-height:16px;margin-top:10px}
 
+
+.gl h3{font-family:"Space Grotesk",sans-serif;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);margin:20px 0 8px}
+.gl h3:first-child{margin-top:0}
+.gl p{font-size:13px;color:var(--dim);line-height:1.65;margin-bottom:9px}
+.gl p.dim{color:var(--faint)}
+.gl code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--edge);background:#0E0A22;border:1px solid var(--line);border-radius:6px;padding:2px 6px;display:inline-block}
+.gl .eq{display:block;padding:11px 13px;margin:10px 0;line-height:1.9}
+.gl table{margin:6px 0 4px}
+.gl tbody td{font-size:12.5px;padding:7px 0}
+.gl tbody td:first-child{width:38%}
+.gl ol{margin:0 0 4px 17px}
+.gl li{font-size:13px;color:var(--dim);line-height:1.65;margin-bottom:9px}
+.gl li b{color:var(--ink);font-weight:500}
+
 @media (max-width:700px){
   .versus{grid-template-columns:1fr}
   .row{grid-template-columns:1fr 74px 52px}
@@ -165,6 +179,41 @@ button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
         <button class="btn" id="resetBtn">Reset to defaults</button>
       </div>
       <p class="status" id="status"></p>
+    </div>
+  </details>
+
+
+  <details id="howBox" style="margin-top:15px">
+    <summary><i class="star"></i>How these weights were worked out</summary>
+    <div class="dbody gl">
+
+      <h3>What a weight means</h3>
+      <p>Each weight is how much damage one point of that stat adds, relative to one point of crit rate. Crit rate is set to 1.00 as the yardstick, so Skill AMP at 1.7 means one point of Skill AMP is worth 1.7 points of crit rate. Multiply each substat by its weight, add them up, and the higher total wins. One point is roughly 0.53% damage.</p>
+
+      <h3>The model</h3>
+      <code class="eq">damage ∝ attack × (1 + SkillAMP/100) × (1 + haste/100) × (1 + critRate/100 × critDmg/100)</code>
+      <code class="eq">attack = ( base × (1 + rune ATK AMP) + gear attack ) × stella × lab × guild</code>
+      <p>Gear attack sits outside the rune multiplier, so the two never feed each other. Everything in the second line gets multiplied by stella, lab and guild — which is why gear attack is worth roughly eight times its face value.</p>
+
+      <h3>Tests run</h3>
+      <ol>
+        <li><b>Gear attack.</b> Swapped a 1003 attack piece for a 273 attack piece. Wind Archer fell 53,098 → 47,320; Milky Way 53,093 → 47,078. One point of gear attack is worth 7.92 and 8.24 actual attack respectively. That single swap cost about 11% damage.</li>
+        <li><b>Rune ATK AMP.</b> Removed a 1.9% roll from Milky Way: 41,453 → 40,841, so 1% is worth 322 attack. Wind Archer measured 357. Because rune AMP scales only base attack, its value shrinks as gear attack grows.</li>
+        <li><b>Skill AMP pooling.</b> Removed 2.5% from Twizzly, 11.09% → 8.59%. Damage fell 745 → 728, which solves to a pool of 9.6% — matching the displayed figure. So Skill AMP rolls pool additively and there is no hidden bonus stacking with them.</li>
+        <li><b>Hidden base crit damage.</b> Melon Soda at 87% crit rate hits for 109 normally and 218 on a crit — exactly 2.0×. With crit damage displayed at 100.08%, that leaves a base of zero. The displayed number is the whole bonus.</li>
+        <li><b>Haste formula.</b> Milky Way's 6.5 second cooldown at haste 12 predicts 5.804 seconds under <code>H/(H+100)</code>. Timed at 5.5–6 seconds. A hidden haste bonus of even +10 would have given 5.33 seconds, so the displayed value is the true one.</li>
+      </ol>
+
+      <h3>Why skill descriptions are not asked for</h3>
+      <p>Coefficients, cooldown, pierce count and trigger conditions are all scalar multipliers on damage, and every weight is a ratio between two damage figures — so they cancel exactly. An archer casting every 2.5 seconds and a bruiser casting every 12 get identical stat priorities. Only your current stat values matter.</p>
+
+      <h3>Haste and Skill AMP are the same mechanic</h3>
+      <p>Cooldown is <code>base × 100/(H+100)</code>, so casts per second scale as <code>1 + H/100</code> — the same form as Skill AMP's <code>1 + A/100</code>. Haste 9 is literally skill damage +9%. The cooldown reduction diminishes on screen, but cast frequency is perfectly linear, which is why haste is worth far more than it looks.</p>
+
+      <h3>What this does not cover</h3>
+      <p class="dim">Measured on four damage cookies. Supports and healers are not modelled — haste on a buffer buys uptime on a team-wide effect, which is worth more than the damage figure here suggests. Survivability is not modelled at all.</p>
+      <p class="dim">Weights drift as you grow. Attack-based weights shrink as total attack rises; the skill weights shrink as those stats stack. Verdicts where one option leads by more than 10% are reliable; under 5% the two options are near enough equivalent that the choice barely matters.</p>
+
     </div>
   </details>
 
