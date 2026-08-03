@@ -110,6 +110,25 @@ button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
 .gl li{font-size:13px;color:var(--dim);line-height:1.65;margin-bottom:9px}
 .gl li b{color:var(--ink);font-weight:500}
 
+
+.comparePanel{position:relative}
+#compareArea{transition:opacity .25s ease, filter .25s ease}
+#compareArea.locked{opacity:.22;filter:grayscale(1);pointer-events:none;user-select:none}
+.soon{
+  position:absolute;inset:52px 19px 19px;display:none;
+  align-items:center;justify-content:center;flex-direction:column;gap:9px;
+  text-align:center;padding:20px;z-index:2;
+}
+.soon.show{display:flex}
+.soon .badge{
+  font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:#0B0820;background:var(--gold);border-radius:999px;padding:6px 14px;
+}
+.soon h3{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(18px,3vw,23px);letter-spacing:-.02em;color:var(--ink)}
+.soon p{font-size:13px;color:var(--dim);max-width:40ch;line-height:1.6}
+.modes button.pending{color:var(--faint)}
+.modes button.pending[aria-pressed="true"]{background:var(--faint);color:#0B0820}
+
 @media (max-width:700px){
   .versus{grid-template-columns:1fr}
   .row{grid-template-columns:1fr 74px 52px}
@@ -125,11 +144,17 @@ button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
     <p class="tagline">Two options, one slot. Enter what each gives and see which wins.</p>
   </header>
 
-  <section class="panel">
+  <section class="panel comparePanel">
     <div class="modes" role="group" aria-label="What are you comparing">
       <button id="modeGear" aria-pressed="true">Gear</button>
-      <button id="modeRune" aria-pressed="false">Rune</button>
+      <button id="modeRune" class="pending" aria-pressed="false">Rune</button>
     </div>
+    <div class="soon" id="soon" aria-live="polite">
+      <span class="badge">Coming soon</span>
+      <h3>Rune comparison</h3>
+      <p>Rune weights are measured but the ATK AMP figure shifts with your total attack, so this needs per-cookie calibration before it can be trusted. Gear works now.</p>
+    </div>
+    <div id="compareArea">
     <div class="versus">
       <div class="item a">
         <div class="itemhead"><i class="pip"></i><input id="nameA" type="text" value="Option A" aria-label="Name of option A"></div>
@@ -165,6 +190,7 @@ button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
       </div>
       <p class="call" id="call">Fill in both options to compare</p>
       <p class="margin" id="marginTxt"></p>
+    </div>
     </div>
   </section>
 
@@ -308,15 +334,16 @@ function buildRows(){
 function buildWeights(){
   const host = $('wtRows');
   host.innerHTML = '';
-  stats().forEach(st => {
+  const wm = LOCKED[mode] ? 'gear' : mode;
+  DEFAULTS[wm].forEach(st => {
     const r = document.createElement('div');
     r.className = 'wtrow';
     r.innerHTML = `<label for="w_${st.k}">${st.label}</label>` +
-      `<input type="number" step="0.01" id="w_${st.k}" value="${weights[mode][st.k]}">`;
+      `<input type="number" step="0.01" id="w_${st.k}" value="${weights[wm][st.k]}">`;
     host.appendChild(r);
   });
   host.querySelectorAll('input').forEach(i => i.addEventListener('input', () => {
-    weights[mode][i.id.slice(2)] = parseFloat(i.value) || 0;
+    weights[LOCKED[mode] ? 'gear' : mode][i.id.slice(2)] = parseFloat(i.value) || 0;
     render();
   }));
 }
@@ -363,17 +390,25 @@ function render(){
   save();
 }
 
+const LOCKED = {rune:true};
+function applyLock(){
+  const locked = !!LOCKED[mode];
+  $('compareArea').classList.toggle('locked', locked);
+  $('soon').classList.toggle('show', locked);
+  $('compareArea').setAttribute('aria-hidden', locked ? 'true' : 'false');
+}
 function setMode(m){
   mode = m;
   $('modeGear').setAttribute('aria-pressed', m === 'gear');
   $('modeRune').setAttribute('aria-pressed', m === 'rune');
-  buildRows(); buildWeights(); render();
+  buildRows(); buildWeights(); applyLock(); render();
 }
 $('modeGear').addEventListener('click', () => setMode('gear'));
 $('modeRune').addEventListener('click', () => setMode('rune'));
 
 $('resetBtn').addEventListener('click', () => {
-  DEFAULTS[mode].forEach(s => weights[mode][s.k] = s.w);
+  const rm = LOCKED[mode] ? 'gear' : mode;
+  DEFAULTS[rm].forEach(s => weights[rm][s.k] = s.w);
   buildWeights(); render();
   $('status').textContent = 'Weights reset.';
   setTimeout(() => { $('status').textContent = ''; }, 2600);
@@ -405,7 +440,7 @@ document.addEventListener('input', e => {
       if(o.mode) mode = o.mode;
       $('modeGear').setAttribute('aria-pressed', mode === 'gear');
       $('modeRune').setAttribute('aria-pressed', mode === 'rune');
-      buildRows(); buildWeights();
+      buildRows(); buildWeights(); applyLock();
       if(o.nameA) $('nameA').value = o.nameA;
       if(o.nameB) $('nameB').value = o.nameB;
       if(o.vals) Object.keys(o.vals).forEach(k => { if($(k)) $(k).value = o.vals[k]; });
@@ -413,7 +448,7 @@ document.addEventListener('input', e => {
       return;
     }
   }catch(e){}
-  buildRows(); buildWeights(); render();
+  buildRows(); buildWeights(); applyLock(); render();
 })();
 </script>
 </body>
