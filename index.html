@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crumble Substat Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#120E28; --field:#1B1540; --panel:#221A4D; --line:#372C6B;
+  --edge:#7BF3E2; --node:#FF4FB0; --gold:#FFC24A;
+  --ink:#EAE5FF; --dim:#9289C4; --faint:#6B62A0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--night);
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 78% 9%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1px 1px at 34% 62%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1px 1px at 88% 74%, rgba(255,255,255,.3), transparent),
+    radial-gradient(900px 500px at 20% -10%, rgba(123,243,226,.07), transparent),
+    radial-gradient(700px 500px at 95% 30%, rgba(255,79,176,.07), transparent);
+  color:var(--ink); font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-size:15px; line-height:1.55; padding:26px 16px 70px;
+}
+.wrap{max-width:880px;margin:0 auto}
+
+.masthead{margin-bottom:20px}
+.title{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(27px,4.4vw,40px);letter-spacing:-.03em;line-height:1}
+.title em{font-style:normal;color:var(--edge)}
+.tagline{color:var(--dim);font-size:13.5px;margin-top:7px;max-width:50ch}
+
+.panel{background:linear-gradient(180deg,var(--panel),var(--field));border:1px solid var(--line);border-radius:14px;padding:19px;margin-bottom:15px}
+
+.modes{display:inline-flex;background:#0E0A22;border:1px solid var(--line);border-radius:9px;padding:3px;gap:3px;margin-bottom:16px}
+.modes button{background:transparent;border:none;border-radius:6px;padding:7px 20px;color:var(--dim);font-family:"Space Grotesk",sans-serif;font-weight:500;font-size:13.5px;cursor:pointer}
+.modes button[aria-pressed="true"]{background:var(--edge);color:#0B0820;font-weight:700}
+.modes button:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
+
+.versus{display:grid;gap:15px;grid-template-columns:1fr 1fr}
+.item{background:#191238;border:1px solid var(--line);border-radius:12px;padding:16px}
+.item.a{border-color:rgba(123,243,226,.42)}
+.item.b{border-color:rgba(255,79,176,.42)}
+.itemhead{display:flex;align-items:center;gap:9px;margin-bottom:13px}
+.itemhead .pip{width:11px;height:11px;flex:0 0 11px;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%)}
+.item.a .pip{background:var(--edge)} .item.b .pip{background:var(--node)}
+.itemhead input{background:transparent;border:none;color:var(--ink);font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:16px;width:100%;padding:2px 0;border-bottom:1px dashed var(--line)}
+.itemhead input:focus{outline:none;border-bottom-color:var(--edge)}
+.rows{display:flex;flex-direction:column;gap:7px}
+.row{display:grid;grid-template-columns:1fr 82px 56px;gap:8px;align-items:center}
+.row > span{font-size:12.5px;color:var(--dim)}
+.row.hero > span{color:var(--ink);font-weight:500}
+.row input{background:#0E0A22;border:1px solid var(--line);border-radius:7px;color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:14px;padding:6px 8px;width:100%;text-align:right}
+.row.hero input{border-color:var(--faint)}
+.row input:focus{outline:2px solid var(--edge);outline-offset:1px;border-color:transparent}
+.row .pts{font-family:"IBM Plex Mono",monospace;font-size:12.5px;text-align:right;color:var(--faint)}
+.row .pts.on{color:var(--ink)}
+.subtotal{display:flex;justify-content:space-between;align-items:baseline;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
+.subtotal span{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.subtotal strong{font-family:"IBM Plex Mono",monospace;font-size:25px;font-weight:600}
+.item.a .subtotal strong{color:var(--edge)} .item.b .subtotal strong{color:var(--node)}
+
+.verdict{text-align:center;margin-top:15px}
+.beamwrap{display:flex;justify-content:center;padding:8px 0 2px}
+svg.beam{width:min(400px,100%);height:118px;overflow:visible}
+.beam .bar{stroke:var(--edge);stroke-width:2.5;stroke-linecap:round;filter:drop-shadow(0 0 7px rgba(123,243,226,.55))}
+.beam .arm,.beam .pan{transition:transform .55s cubic-bezier(.32,.9,.35,1)}
+.beam .arm{transform-origin:215px 46px}
+.beam .lbl{font-family:"IBM Plex Mono",monospace;font-size:12px;fill:var(--faint)}
+.call{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(19px,3.2vw,26px);letter-spacing:-.02em}
+.margin{font-family:"IBM Plex Mono",monospace;color:var(--dim);font-size:13px;margin-top:5px}
+
+details{background:linear-gradient(180deg,var(--panel),var(--field));border:1px solid var(--line);border-radius:14px;overflow:hidden}
+summary{padding:17px 19px;cursor:pointer;font-family:"Space Grotesk",sans-serif;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;list-style:none;display:flex;align-items:center;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";margin-left:auto;font-size:17px;color:var(--dim);font-weight:400}
+details[open] summary::after{content:"−"}
+summary:focus-visible{outline:2px solid var(--edge);outline-offset:-2px}
+.star{width:9px;height:9px;flex:0 0 9px;background:var(--edge);clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%)}
+.dbody{padding:0 19px 19px}
+
+.wt{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.wtrow{display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:center}
+.wtrow label{font-size:13px;color:var(--dim)}
+.wtrow input{background:#0E0A22;border:1px solid var(--line);border-radius:7px;color:var(--edge);font-family:"IBM Plex Mono",monospace;font-size:14px;padding:6px 9px;width:100%;text-align:right}
+.wtrow input:focus{outline:2px solid var(--edge);outline-offset:1px;border-color:transparent}
+.note{font-size:12.5px;color:var(--faint);line-height:1.6}
+.note.top{margin-bottom:14px}
+.actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+button.btn{font-family:"Space Grotesk",sans-serif;font-weight:500;font-size:13px;background:#0E0A22;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+button.btn:hover{border-color:var(--edge);color:var(--edge)}
+button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
+.status{font-size:12px;color:var(--faint);font-family:"IBM Plex Mono",monospace;min-height:16px;margin-top:10px}
+
+@media (max-width:700px){
+  .versus{grid-template-columns:1fr}
+  .row{grid-template-columns:1fr 74px 52px}
+}
+@media (prefers-reduced-motion:reduce){.beam .arm,.beam .pan{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <h1 class="title">Substat <em>Lab</em></h1>
+    <p class="tagline">Two options, one slot. Enter what each gives and see which wins.</p>
+  </header>
+
+  <section class="panel">
+    <div class="modes" role="group" aria-label="What are you comparing">
+      <button id="modeGear" aria-pressed="true">Gear</button>
+      <button id="modeRune" aria-pressed="false">Rune</button>
+    </div>
+    <div class="versus">
+      <div class="item a">
+        <div class="itemhead"><i class="pip"></i><input id="nameA" type="text" value="Option A" aria-label="Name of option A"></div>
+        <div class="rows" id="rowsA"></div>
+        <div class="subtotal"><span>Score</span><strong id="totA">—</strong></div>
+      </div>
+      <div class="item b">
+        <div class="itemhead"><i class="pip"></i><input id="nameB" type="text" value="Option B" aria-label="Name of option B"></div>
+        <div class="rows" id="rowsB"></div>
+        <div class="subtotal"><span>Score</span><strong id="totB">—</strong></div>
+      </div>
+    </div>
+    <div class="verdict">
+      <div class="beamwrap">
+        <svg class="beam" viewBox="0 0 430 118" role="img" aria-labelledby="beamTitle">
+          <title id="beamTitle">Balance tipping toward the stronger option</title>
+          <g class="arm" id="arm">
+            <line class="bar" x1="75" y1="46" x2="355" y2="46"/>
+            <g class="pan" id="panA" transform="translate(75,46)">
+              <path d="M0,-13 L11,0 L0,13 L-11,0 Z" fill="var(--edge)"/>
+              <circle r="19" fill="none" stroke="var(--edge)" stroke-width="1" opacity=".35"/>
+            </g>
+            <g class="pan" id="panB" transform="translate(355,46)">
+              <path d="M0,-13 L11,0 L0,13 L-11,0 Z" fill="var(--node)"/>
+              <circle r="19" fill="none" stroke="var(--node)" stroke-width="1" opacity=".35"/>
+            </g>
+          </g>
+          <path d="M215,46 L233,100 L197,100 Z" fill="none" stroke="var(--line)" stroke-width="1.5"/>
+          <line x1="185" y1="100" x2="245" y2="100" stroke="var(--line)" stroke-width="2.5"/>
+          <text class="lbl" id="lblA" x="75" y="116" text-anchor="middle">A</text>
+          <text class="lbl" id="lblB" x="355" y="116" text-anchor="middle">B</text>
+        </svg>
+      </div>
+      <p class="call" id="call">Fill in both options to compare</p>
+      <p class="margin" id="marginTxt"></p>
+    </div>
+  </section>
+
+  <details id="wtBox">
+    <summary><i class="star"></i>Weights</summary>
+    <div class="dbody">
+      <p class="note top">One point is roughly 0.53% damage. Measured on Wind Archer, Milky&nbsp;Way, Twizzly and Melon&nbsp;Soda, so they hold across cookies within a few percent.</p>
+      <p class="note top"><b style="color:var(--dim)">Balance rule.</b> Skill AMP and haste are the same mechanic — haste 9 is skill damage +9% — and they multiply each other, so feed whichever number is lower. Crit rate and crit damage work the same way. Crit damage&rsquo;s weight is just your crit rate divided by your crit damage.</p>
+      <p class="note top"><b style="color:var(--dim)">When to revisit.</b> Drop the skill weights to 1.6 once Skill AMP or haste passes 20, and to 1.4 past 35. Gear attack and rune ATK AMP shrink as your total attack grows — recalibrate after a big jump.</p>
+      <div class="wt" id="wtRows"></div>
+      <div class="actions">
+        <button class="btn" id="resetBtn">Reset to defaults</button>
+      </div>
+      <p class="status" id="status"></p>
+    </div>
+  </details>
+
+</div>
+
+<script>
+/* Standalone storage shim — mirrors the Claude artifact API on top of localStorage
+   so this file works when hosted anywhere. Falls back to memory if storage is
+   blocked (private browsing, cookies disabled). */
+(function(){
+  if (window.storage) return;
+  var mem = {}, ok = true;
+  try { var k='__t'; localStorage.setItem(k,'1'); localStorage.removeItem(k); }
+  catch(e){ ok = false; }
+  var read  = function(k){ return ok ? localStorage.getItem('crumble::'+k) : (k in mem ? mem[k] : null); };
+  var write = function(k,v){ ok ? localStorage.setItem('crumble::'+k, v) : (mem[k] = v); };
+  var drop  = function(k){ ok ? localStorage.removeItem('crumble::'+k) : delete mem[k]; };
+  window.storage = {
+    get: function(key){
+      var v = read(key);
+      if (v === null) return Promise.reject(new Error('not found'));
+      return Promise.resolve({key: key, value: v, shared: false});
+    },
+    set: function(key, value){
+      write(key, value);
+      return Promise.resolve({key: key, value: value, shared: false});
+    },
+    delete: function(key){
+      drop(key);
+      return Promise.resolve({key: key, deleted: true, shared: false});
+    },
+    list: function(prefix){
+      var keys = [];
+      if (ok) {
+        for (var i = 0; i < localStorage.length; i++){
+          var k = localStorage.key(i);
+          if (k && k.indexOf('crumble::') === 0){
+            var bare = k.slice(9);
+            if (!prefix || bare.indexOf(prefix) === 0) keys.push(bare);
+          }
+        }
+      } else {
+        keys = Object.keys(mem).filter(function(k){ return !prefix || k.indexOf(prefix) === 0; });
+      }
+      return Promise.resolve({keys: keys, prefix: prefix, shared: false});
+    }
+  };
+})();
+</script>
+<script>
+const DEFAULTS = {
+  gear: [
+    {k:'atk',      label:'Attack (main + flat)', step:1,    w:0.03, hero:true},
+    {k:'skillAmp', label:'Skill AMP %',          step:0.01, w:1.7},
+    {k:'haste',    label:'Skill haste',          step:1,    w:1.7},
+    {k:'critPct',  label:'Crit rate %',          step:0.01, w:1.0},
+    {k:'critDmg',  label:'Crit damage %',        step:0.01, w:0.9},
+  ],
+  rune: [
+    {k:'atkAmp',   label:'ATK AMP %',            step:0.01, w:1.2, hero:true},
+    {k:'skillAmp', label:'Skill AMP %',          step:0.01, w:1.7},
+    {k:'haste',    label:'Skill haste',          step:1,    w:1.7},
+    {k:'critPct',  label:'Crit rate %',          step:0.01, w:1.0},
+    {k:'critDmg',  label:'Crit damage %',        step:0.01, w:0.9},
+  ]
+};
+const PCT_PER_POINT = 0.53;
+let mode = 'gear';
+let weights = {gear:{}, rune:{}};
+Object.keys(DEFAULTS).forEach(m => DEFAULTS[m].forEach(s => weights[m][s.k] = s.w));
+
+const $ = id => document.getElementById(id);
+const num = id => { const el = $(id); if(!el) return 0; const v = parseFloat(el.value); return isFinite(v) ? v : 0; };
+const stats = () => DEFAULTS[mode];
+
+function buildRows(){
+  ['A','B'].forEach(side => {
+    const host = $('rows'+side);
+    const keep = {};
+    Array.from(host.querySelectorAll('input')).forEach(i => keep[i.id.slice(0,-1)] = i.value);
+    host.innerHTML = '';
+    stats().forEach(st => {
+      const row = document.createElement('div');
+      row.className = 'row' + (st.hero ? ' hero' : '');
+      row.innerHTML = `<span>${st.label}</span>` +
+        `<input type="number" step="${st.step}" id="${st.k}${side}" value="${keep[st.k] !== undefined ? keep[st.k] : 0}" aria-label="${st.label} on option ${side}">` +
+        `<span class="pts" id="p${st.k}${side}">—</span>`;
+      host.appendChild(row);
+    });
+  });
+}
+function buildWeights(){
+  const host = $('wtRows');
+  host.innerHTML = '';
+  stats().forEach(st => {
+    const r = document.createElement('div');
+    r.className = 'wtrow';
+    r.innerHTML = `<label for="w_${st.k}">${st.label}</label>` +
+      `<input type="number" step="0.01" id="w_${st.k}" value="${weights[mode][st.k]}">`;
+    host.appendChild(r);
+  });
+  host.querySelectorAll('input').forEach(i => i.addEventListener('input', () => {
+    weights[mode][i.id.slice(2)] = parseFloat(i.value) || 0;
+    render();
+  }));
+}
+
+function render(){
+  const tot = {};
+  ['A','B'].forEach(side => {
+    let sum = 0;
+    stats().forEach(st => {
+      const raw = num(st.k+side);
+      const v = raw * weights[mode][st.k];
+      sum += v;
+      const cell = $('p'+st.k+side);
+      cell.textContent = raw ? v.toFixed(2) : '—';
+      cell.className = 'pts' + (raw ? ' on' : '');
+    });
+    tot[side] = sum;
+    $('tot'+side).textContent = sum ? sum.toFixed(2) : '—';
+  });
+
+  const diff = tot.A - tot.B;
+  const any = Math.abs(tot.A) > 1e-9 || Math.abs(tot.B) > 1e-9;
+  const tilt = Math.max(-13, Math.min(13, -diff*2.2));
+  $('arm').setAttribute('transform', `rotate(${tilt} 215 46)`);
+  $('panA').setAttribute('transform', `translate(75,46) rotate(${-tilt})`);
+  $('panB').setAttribute('transform', `translate(355,46) rotate(${-tilt})`);
+  const nA = $('nameA').value || 'Option A', nB = $('nameB').value || 'Option B';
+  $('lblA').textContent = nA; $('lblB').textContent = nB;
+
+  if(!any){
+    $('call').textContent = 'Fill in both options to compare';
+    $('call').style.color = 'var(--dim)';
+    $('marginTxt').textContent = '';
+  } else if(Math.abs(diff) < 0.05){
+    $('call').textContent = 'Too close to call';
+    $('call').style.color = 'var(--gold)';
+    $('marginTxt').textContent = 'Within a rounding error. Decide on set bonus or what you can spare.';
+  } else {
+    $('call').textContent = 'Take ' + (diff > 0 ? nA : nB);
+    $('call').style.color = diff > 0 ? 'var(--edge)' : 'var(--node)';
+    $('marginTxt').textContent =
+      `${Math.abs(diff).toFixed(2)} points ahead · roughly ${(Math.abs(diff)*PCT_PER_POINT).toFixed(2)}% more damage`;
+  }
+  save();
+}
+
+function setMode(m){
+  mode = m;
+  $('modeGear').setAttribute('aria-pressed', m === 'gear');
+  $('modeRune').setAttribute('aria-pressed', m === 'rune');
+  buildRows(); buildWeights(); render();
+}
+$('modeGear').addEventListener('click', () => setMode('gear'));
+$('modeRune').addEventListener('click', () => setMode('rune'));
+
+$('resetBtn').addEventListener('click', () => {
+  DEFAULTS[mode].forEach(s => weights[mode][s.k] = s.w);
+  buildWeights(); render();
+  $('status').textContent = 'Weights reset.';
+  setTimeout(() => { $('status').textContent = ''; }, 2600);
+});
+
+function snapshot(){
+  const o = {mode, weights, nameA:$('nameA').value, nameB:$('nameB').value, vals:{}};
+  DEFAULTS[mode].forEach(st => ['A','B'].forEach(sd => {
+    const el = $(st.k+sd); if(el) o.vals[st.k+sd] = el.value;
+  }));
+  return o;
+}
+let t;
+function save(){
+  clearTimeout(t);
+  t = setTimeout(async () => { try{ await window.storage.set('crumble:mvp', JSON.stringify(snapshot())); }catch(e){} }, 600);
+}
+
+document.addEventListener('input', e => {
+  if(e.target.matches('input') && !e.target.id.startsWith('w_')) render();
+});
+
+(async function(){
+  try{
+    const r = await window.storage.get('crumble:mvp');
+    if(r && r.value){
+      const o = JSON.parse(r.value);
+      if(o.weights) weights = o.weights;
+      if(o.mode) mode = o.mode;
+      $('modeGear').setAttribute('aria-pressed', mode === 'gear');
+      $('modeRune').setAttribute('aria-pressed', mode === 'rune');
+      buildRows(); buildWeights();
+      if(o.nameA) $('nameA').value = o.nameA;
+      if(o.nameB) $('nameB').value = o.nameB;
+      if(o.vals) Object.keys(o.vals).forEach(k => { if($(k)) $(k).value = o.vals[k]; });
+      render();
+      return;
+    }
+  }catch(e){}
+  buildRows(); buildWeights(); render();
+})();
+</script>
+</body>
+</html>
