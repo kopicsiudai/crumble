@@ -50,6 +50,10 @@ body{
 .item.a .pip{background:var(--edge)} .item.b .pip{background:var(--node)}
 .itemhead input{background:transparent;border:none;color:var(--ink);font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:16px;width:100%;padding:2px 0;border-bottom:1px dashed var(--line)}
 .itemhead input:focus{outline:none;border-bottom-color:var(--edge)}
+.clr{flex:0 0 auto;background:transparent;border:1px solid var(--line);border-radius:7px;color:var(--faint);font-family:"Space Grotesk",sans-serif;font-weight:500;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;cursor:pointer}
+.clr:hover:not([disabled]){border-color:var(--node);color:var(--node)}
+.clr:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
+.clr[disabled]{opacity:.3;cursor:default}
 .rows{display:flex;flex-direction:column;gap:7px}
 .row{display:grid;grid-template-columns:1fr 82px 56px;gap:8px;align-items:center}
 .row > span{font-size:12.5px;color:var(--dim)}
@@ -57,6 +61,11 @@ body{
 .row input{background:#0E0A22;border:1px solid var(--line);border-radius:7px;color:var(--ink);font-family:"IBM Plex Mono",monospace;font-size:14px;padding:6px 8px;width:100%;text-align:right}
 .row.hero input{border-color:var(--faint)}
 .row input:focus{outline:2px solid var(--edge);outline-offset:1px;border-color:transparent}
+.row input::placeholder{color:var(--faint);opacity:1}
+/* spinners are dead weight here — useless on touch, and they steal tap area */
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .row .pts{font-family:"IBM Plex Mono",monospace;font-size:12.5px;text-align:right;color:var(--faint)}
 .row .pts.on{color:var(--ink)}
 .subtotal{display:flex;justify-content:space-between;align-items:baseline;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
@@ -131,7 +140,11 @@ button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
 
 @media (max-width:700px){
   .versus{grid-template-columns:1fr}
-  .row{grid-template-columns:1fr 74px 52px}
+  .row{grid-template-columns:1fr 88px 44px}
+  /* 16px is the threshold below which iOS Safari zooms the page on focus */
+  .row input,.wtrow input,.itemhead input{font-size:16px}
+  .row input{padding:10px 9px}
+  .wtrow input{padding:9px 9px}
 }
 @media (prefers-reduced-motion:reduce){.beam .arm,.beam .pan{transition:none}}
 </style>
@@ -157,12 +170,12 @@ button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
     <div id="compareArea">
     <div class="versus">
       <div class="item a">
-        <div class="itemhead"><i class="pip"></i><input id="nameA" type="text" value="Option A" aria-label="Name of option A"></div>
+        <div class="itemhead"><i class="pip"></i><input id="nameA" type="text" value="Option A" aria-label="Name of option A"><button type="button" class="clr" id="clrA" aria-label="Clear all values for option A" disabled>Clear</button></div>
         <div class="rows" id="rowsA"></div>
         <div class="subtotal"><span>Score</span><strong id="totA">—</strong></div>
       </div>
       <div class="item b">
-        <div class="itemhead"><i class="pip"></i><input id="nameB" type="text" value="Option B" aria-label="Name of option B"></div>
+        <div class="itemhead"><i class="pip"></i><input id="nameB" type="text" value="Option B" aria-label="Name of option B"><button type="button" class="clr" id="clrB" aria-label="Clear all values for option B" disabled>Clear</button></div>
         <div class="rows" id="rowsB"></div>
         <div class="subtotal"><span>Score</span><strong id="totB">—</strong></div>
       </div>
@@ -325,7 +338,7 @@ function buildRows(){
       const row = document.createElement('div');
       row.className = 'row' + (st.hero ? ' hero' : '');
       row.innerHTML = `<span>${st.label}</span>` +
-        `<input type="number" step="${st.step}" id="${st.k}${side}" value="${keep[st.k] !== undefined ? keep[st.k] : 0}" aria-label="${st.label} on option ${side}">` +
+        `<input type="number" inputmode="decimal" step="${st.step}" id="${st.k}${side}" value="${keep[st.k] !== undefined ? keep[st.k] : ''}" placeholder="0" aria-label="${st.label} on option ${side}">` +
         `<span class="pts" id="p${st.k}${side}">—</span>`;
       host.appendChild(row);
     });
@@ -351,8 +364,10 @@ function buildWeights(){
 function render(){
   const tot = {};
   ['A','B'].forEach(side => {
-    let sum = 0;
+    let sum = 0, filled = false;
     stats().forEach(st => {
+      const el = $(st.k+side);
+      if (el && el.value.trim() !== '') filled = true;
       const raw = num(st.k+side);
       const v = raw * weights[mode][st.k];
       sum += v;
@@ -362,6 +377,7 @@ function render(){
     });
     tot[side] = sum;
     $('tot'+side).textContent = sum ? sum.toFixed(2) : '—';
+    $('clr'+side).disabled = !filled;
   });
 
   const diff = tot.A - tot.B;
@@ -406,6 +422,25 @@ function setMode(m){
 $('modeGear').addEventListener('click', () => setMode('gear'));
 $('modeRune').addEventListener('click', () => setMode('rune'));
 
+/* Tapping a filled field selects its contents so typing overwrites — no cursor
+   hunting on touch. Delegated because buildRows() recreates the inputs.
+   rAF because iOS Safari clears the selection during its own focus handling. */
+document.addEventListener('focusin', e => {
+  if (e.target.matches('.row input, .wtrow input, .itemhead input')){
+    const el = e.target;
+    requestAnimationFrame(() => { try{ el.select(); }catch(_){} });
+  }
+});
+
+['A','B'].forEach(side => {
+  $('clr'+side).addEventListener('click', () => {
+    stats().forEach(st => { const el = $(st.k+side); if(el) el.value = ''; });
+    render();
+    const first = $(stats()[0].k+side);
+    if(first) first.focus();
+  });
+});
+
 $('resetBtn').addEventListener('click', () => {
   const rm = LOCKED[mode] ? 'gear' : mode;
   DEFAULTS[rm].forEach(s => weights[rm][s.k] = s.w);
@@ -443,7 +478,13 @@ document.addEventListener('input', e => {
       buildRows(); buildWeights(); applyLock();
       if(o.nameA) $('nameA').value = o.nameA;
       if(o.nameB) $('nameB').value = o.nameB;
-      if(o.vals) Object.keys(o.vals).forEach(k => { if($(k)) $(k).value = o.vals[k]; });
+      /* Older saves stored a literal "0" in every field. A zero scores the same as
+         an empty field, so drop it and let the placeholder show instead. */
+      if(o.vals) Object.keys(o.vals).forEach(k => {
+        if(!$(k)) return;
+        const v = o.vals[k];
+        $(k).value = (parseFloat(v) === 0) ? '' : v;
+      });
       render();
       return;
     }
