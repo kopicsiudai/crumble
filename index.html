@@ -182,6 +182,12 @@ button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
 #ovenList.filtered .rchip.sel{opacity:1}
 #ovenList .wrow{grid-template-columns:78px 1fr}
 .wname .glvl{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;color:var(--ink);background:#0E0A22;border:1px solid var(--line);border-radius:5px;padding:2px 6px;margin-top:4px;cursor:help}
+#tip{position:fixed;z-index:60;max-width:240px;background:linear-gradient(180deg,var(--panel),var(--field));border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:12px;line-height:1.5;color:var(--ink);box-shadow:0 10px 28px rgba(0,0,0,.5);opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity .14s ease,transform .14s ease}
+#tip.show{opacity:1;transform:none}
+#tip b{display:block;font-family:"Space Grotesk",sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--edge);margin-bottom:2px}
+#tip::after{content:"";position:absolute;width:8px;height:8px;left:var(--ax,50%);margin-left:-4px;bottom:-4.5px;background:var(--field);border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
+#tip.flip::after{bottom:auto;top:-4.5px;background:var(--panel);border-right:none;border-bottom:none;border-left:1px solid var(--line);border-top:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){#tip{transition:none;transform:none}}
 .rbar{display:flex;height:6px;border-radius:4px;overflow:hidden;background:#0E0A22;margin-bottom:6px}
 .rbar i{height:100%;transition:opacity .15s ease}
 #ovenList.filtered .rbar i{opacity:.16}
@@ -871,12 +877,44 @@ function buildOven(){
       : '').join('');
     const [gmin, gmax] = OVEN_EQUIP[i];
     row.innerHTML =
-      `<span class="wname">Lv ${pad2(i + 1)}<span class="glvl" title="Gear levels: this oven bakes equipment Lv ${gmin}–${gmax}">⚙ ${gmin}–${gmax}</span></span>` +
+      `<span class="wname">Lv ${pad2(i + 1)}<span class="glvl" tabindex="0" data-tip="This oven bakes equipment Lv ${gmin}–${gmax}." aria-label="Gear levels: this oven bakes equipment Lv ${gmin}–${gmax}">⚙ ${gmin}–${gmax}</span></span>` +
       `<div><div class="rbar">${segs}</div><div class="chips">${chips}</div></div>`;
     frag.appendChild(row);
   });
   host.appendChild(frag);
   $('ovenVerdict').textContent = OVEN_DEFAULT_MSG;
+  buildTip(host);
+}
+
+/* One shared tooltip bubble, position:fixed so the scrolling list can't clip it.
+   Prefers sitting above the badge; flips below when there's no headroom. The --ax
+   var keeps the arrow pointing at the badge even when the bubble clamps at a
+   viewport edge. Focus events cover keyboard and (via tap-to-focus) touch. */
+function buildTip(host){
+  const tip = document.createElement('div');
+  tip.id = 'tip';
+  document.body.appendChild(tip);
+
+  function show(el){
+    tip.innerHTML = '<b>Gear levels</b>' + el.dataset.tip;
+    tip.classList.add('show');
+    tip.classList.remove('flip');
+    const r = el.getBoundingClientRect();
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - tip.offsetWidth / 2),
+      innerWidth - tip.offsetWidth - 8);
+    let top = r.top - tip.offsetHeight - 9;
+    if (top < 8){ top = r.bottom + 9; tip.classList.add('flip'); }
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.setProperty('--ax', (r.left + r.width / 2 - left) + 'px');
+  }
+  const hide = () => tip.classList.remove('show');
+
+  host.addEventListener('pointerover', e => { const g = e.target.closest('.glvl'); if (g) show(g); });
+  host.addEventListener('pointerout', e => { if (e.target.closest('.glvl')) hide(); });
+  host.addEventListener('focusin', e => { const g = e.target.closest('.glvl'); if (g) show(g); });
+  host.addEventListener('focusout', e => { if (e.target.closest('.glvl')) hide(); });
+  host.addEventListener('scroll', hide, {passive: true});
 }
 
 let selRarity = null;
