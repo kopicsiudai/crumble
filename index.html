@@ -181,7 +181,7 @@ button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
 #ovenList.filtered .rchip{opacity:.22}
 #ovenList.filtered .rchip.sel{opacity:1}
 #ovenList .wrow{grid-template-columns:78px 1fr}
-.wname .glvl{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;color:var(--ink);background:#0E0A22;border:1px solid var(--line);border-radius:5px;padding:2px 6px;margin-top:4px}
+.wname .glvl{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;color:var(--ink);background:#0E0A22;border:1px solid var(--line);border-radius:5px;padding:2px 6px;margin-top:4px;cursor:help}
 .rbar{display:flex;height:6px;border-radius:4px;overflow:hidden;background:#0E0A22;margin-bottom:6px}
 .rbar i{height:100%;transition:opacity .15s ease}
 #ovenList.filtered .rbar i{opacity:.16}
@@ -871,7 +871,7 @@ function buildOven(){
       : '').join('');
     const [gmin, gmax] = OVEN_EQUIP[i];
     row.innerHTML =
-      `<span class="wname">Lv ${pad2(i + 1)}<span class="glvl">⚙ ${gmin}–${gmax}</span></span>` +
+      `<span class="wname">Lv ${pad2(i + 1)}<span class="glvl" title="Gear levels: this oven bakes equipment Lv ${gmin}–${gmax}">⚙ ${gmin}–${gmax}</span></span>` +
       `<div><div class="rbar">${segs}</div><div class="chips">${chips}</div></div>`;
     frag.appendChild(row);
   });
