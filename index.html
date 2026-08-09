@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crumble Substat Lab</title>
+<title>Crumble Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -212,8 +212,8 @@ button.btn:focus-visible{outline:2px solid var(--edge);outline-offset:2px}
 <div class="wrap">
 
   <header class="masthead">
-    <h1 class="title">Substat <em>Lab</em></h1>
-    <p class="tagline">Two options, one slot. Enter what each gives and see which wins.</p>
+    <h1 class="title">Crumble <em>Lab</em></h1>
+    <p class="tagline" id="tagline">Two options, one slot. Enter what each gives and see which wins.</p>
   </header>
 
   <nav class="modes pagetabs" role="group" aria-label="Section">
@@ -952,14 +952,19 @@ function selectRarity(r){
 }
 
 const PAGE_TABS = {
-  lab: {btn: 'tabLab', view: 'labView'},
-  acc: {btn: 'tabAcc', view: 'accView'},
-  focus: {btn: 'tabFocus', view: 'focusView'},
-  oven: {btn: 'tabOven', view: 'ovenView'},
+  lab: {btn: 'tabLab', view: 'labView',
+    tag: 'Two options, one slot. Enter what each gives and see which wins.'},
+  acc: {btn: 'tabAcc', view: 'accView',
+    tag: 'The Accuracy stat that stops your attacks missing, stage by stage.'},
+  focus: {btn: 'tabFocus', view: 'focusView',
+    tag: 'The Focus stat to match each stage’s Resist — and what overcapping buys.'},
+  oven: {btn: 'tabOven', view: 'ovenView',
+    tag: 'What each oven level bakes: rarity odds and gear levels.'},
 };
 let activeTab = 'lab';
 function setTab(t){
   activeTab = t;
+  $('tagline').textContent = PAGE_TABS[t].tag;
   for (const [key, p] of Object.entries(PAGE_TABS)){
     $(p.btn).setAttribute('aria-pressed', t === key);
     $(p.view).hidden = t !== key;
